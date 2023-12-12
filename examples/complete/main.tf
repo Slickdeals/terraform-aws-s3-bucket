@@ -10,9 +10,7 @@ module "s3_bucket" {
   source = "../../"
 
   user_enabled                  = var.user_enabled
-  acl                           = var.acl
   force_destroy                 = var.force_destroy
-  grants                        = var.grants
   lifecycle_rules               = var.lifecycle_rules
   lifecycle_configuration_rules = var.lifecycle_configuration_rules
   versioning_enabled            = var.versioning_enabled
@@ -28,7 +26,6 @@ module "s3_bucket" {
   transfer_acceleration_enabled = var.transfer_acceleration_enabled
   bucket_key_enabled            = var.bucket_key_enabled
   source_policy_documents       = var.source_policy_documents
-  sse_algorithm                 = var.sse_algorithm
   kms_master_key_arn            = var.kms_master_key_arn
   block_public_acls             = var.block_public_acls
   block_public_policy           = var.block_public_policy

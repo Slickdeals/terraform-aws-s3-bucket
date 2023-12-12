@@ -1,32 +1,3 @@
-variable "acl" {
-  type        = string
-  default     = "private"
-  description = <<-EOT
-    The [canned ACL](https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl) to apply.
-    Deprecated by AWS in favor of bucket policies.
-    Automatically disabled if `s3_object_ownership` is set to "BucketOwnerEnforced".
-    Defaults to "private" for backwards compatibility, but we recommend setting `s3_object_ownership` to "BucketOwnerEnforced" instead.
-    EOT
-}
-
-variable "grants" {
-  type = list(object({
-    id          = string
-    type        = string
-    permissions = list(string)
-    uri         = string
-  }))
-  default = []
-
-  description = <<-EOT
-    A list of policy grants for the bucket, taking a list of permissions.
-    Conflicts with `acl`. Set `acl` to `null` to use this.
-    Deprecated by AWS in favor of bucket policies.
-    Automatically disabled if `s3_object_ownership` is set to "BucketOwnerEnforced".
-    EOT
-  nullable    = false
-}
-
 variable "source_policy_documents" {
   type        = list(string)
   default     = []
@@ -64,21 +35,6 @@ variable "logging" {
   description = "Bucket access logging configuration. Empty list for no logging, list of 1 to enable logging."
   nullable    = false
 }
-
-variable "sse_algorithm" {
-  type        = string
-  default     = "AES256"
-  description = "The server-side encryption algorithm to use. Valid values are `AES256` and `aws:kms`"
-  nullable    = false
-}
-
-variable "kms_master_key_arn" {
-  type        = string
-  default     = ""
-  description = "The AWS KMS master key ARN used for the `SSE-KMS` encryption. This can only be used when you set the value of `sse_algorithm` as `aws:kms`. The default aws/s3 AWS KMS master key is used if this element is absent while the `sse_algorithm` is `aws:kms`"
-  nullable    = false
-}
-
 variable "user_enabled" {
   type        = bool
   default     = false
@@ -222,7 +178,7 @@ variable "ignore_public_acls" {
 variable "restrict_public_buckets" {
   type        = bool
   default     = true
-  description = "Set to `false` to disable the restricting of making the bucket public"
+  description = "Set to `false` to disable the restricting of making the bucket public.  Should never be `true` unless you know what you're doing.  Does NOT need to be public to be externally-accessible."
   nullable    = false
 }
 

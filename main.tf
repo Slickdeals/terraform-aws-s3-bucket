@@ -14,17 +14,7 @@ locals {
   bucket_id   = join("", aws_s3_bucket.default[*].id)
   bucket_arn  = "arn:${local.partition}:s3:::${local.bucket_id}"
 
-  acl_grants = var.grants == null ? [] : flatten(
-    [
-      for g in var.grants : [
-        for p in g.permissions : {
-          id         = g.id
-          type       = g.type
-          permission = p
-          uri        = g.uri
-        }
-      ]
-  ])
+  acl_grants = []
 }
 
 data "aws_partition" "current" { count = local.enabled ? 1 : 0 }
@@ -65,23 +55,6 @@ resource "aws_s3_bucket_logging" "default" {
 
   target_bucket = var.logging[0]["bucket_name"]
   target_prefix = var.logging[0]["prefix"]
-}
-
-# https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html
-# https://www.terraform.io/docs/providers/aws/r/s3_bucket.html#enable-default-server-side-encryption
-resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
-  count = local.enabled ? 1 : 0
-
-  bucket = local.bucket_id
-
-  rule {
-    bucket_key_enabled = var.bucket_key_enabled
-
-    apply_server_side_encryption_by_default {
-      sse_algorithm     = var.sse_algorithm
-      kms_master_key_id = var.kms_master_key_arn
-    }
-  }
 }
 
 resource "aws_s3_bucket_website_configuration" "default" {
@@ -156,39 +129,6 @@ resource "aws_s3_bucket_cors_configuration" "default" {
       max_age_seconds = cors_rule.value.max_age_seconds
     }
   }
-}
-
-resource "aws_s3_bucket_acl" "default" {
-  count = local.enabled && var.s3_object_ownership != "BucketOwnerEnforced" ? 1 : 0
-
-  bucket = local.bucket_id
-
-  # Conflicts with access_control_policy so this is enabled if no grants
-  acl = try(length(local.acl_grants), 0) == 0 ? var.acl : null
-
-  dynamic "access_control_policy" {
-    for_each = try(length(local.acl_grants), 0) == 0 || try(length(var.acl), 0) > 0 ? [] : [1]
-
-    content {
-      dynamic "grant" {
-        for_each = local.acl_grants
-
-        content {
-          grantee {
-            id   = grant.value.id
-            type = grant.value.type
-            uri  = grant.value.uri
-          }
-          permission = grant.value.permission
-        }
-      }
-
-      owner {
-        id = one(data.aws_canonical_user_id.default[*].id)
-      }
-    }
-  }
-  depends_on = [aws_s3_bucket_ownership_controls.default]
 }
 
 resource "aws_s3_bucket_replication_configuration" "default" {
@@ -369,7 +309,7 @@ data "aws_iam_policy_document" "bucket_policy" {
 
       condition {
         test     = "StringNotEquals"
-        values   = [var.sse_algorithm]
+        values   = ["AES256"]
         variable = "s3:x-amz-server-side-encryption"
       }
     }
